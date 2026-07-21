@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { RoiPaybackCta } from "./components/RoiPaybackCta";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
 } from "recharts";
@@ -87,6 +88,8 @@ export default function App() {
         {tab === "match" && <MatchingView />}
         {tab === "assist" && <AssistantView />}
       </main>
+
+      <RoiPaybackCta />
 
       <footer className="tk-foot">
         <span>Powered by <b>AXEON</b> — 株式会社アクシオン</span>
@@ -453,4 +456,9 @@ const CSS = `
 
 .tk-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:10.5px;color:var(--sub);padding:0 4px;}
 .tk-foot b{color:var(--steel);}
+.roiPaybackCta{margin:12px 4px 0;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:#fff;}
+.roiPaybackCtaTitle{margin:0;font-size:13px;font-weight:600;line-height:1.5;color:var(--ink);}
+.roiPaybackCtaLead{margin:6px 0 12px;font-size:11.5px;line-height:1.6;color:var(--sub);}
+.roiPaybackCtaButton{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:11px;font-size:12px;font-weight:600;color:#fff;background:var(--steel);text-decoration:none;}
+.roiPaybackCtaButton:hover{filter:brightness(0.95);}
 `;

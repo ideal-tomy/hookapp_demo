@@ -41,6 +41,13 @@ npm run preview
 
 以降、`main` ブランチへの push で自動再デプロイされます。
 
+## 投資回収CTA
+
+`VITE_ROI_SIMULATOR_URL` を設定すると、フッター直上に投資回収シミュレーター（`roi-simulator`）への導線が表示されます。
+
+- 遷移: `/?kit=webapp&industry=construction&cat=dashboard&from=hookapp-takumi`
+- 別タブで開きます
+
 ## 将来の AI 連携
 
 選定アシスタントは `/api/chat` エンドポイント経由で応答します。AI 実装時は [`api/chat.js`](./api/chat.js) を Anthropic API プロキシに差し替え、Vercel に `ANTHROPIC_API_KEY` を設定してください（`.env.example` 参照）。フロントエンドの変更は不要です。
