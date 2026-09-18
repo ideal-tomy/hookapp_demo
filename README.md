@@ -12,6 +12,9 @@
 
 ## ローカル開発
 
+トップページに紹介アニメーションを掲載しています。直接体験する場合は `/#score`（査定）、`/#match`（協業）、`/#assist`（相談）を開いてください。
+設計メモ・場面表・差し替え箇所は [紹介のREADME](src/components/demo-intro/README.md) に記載しています。
+
 ```bash
 npm install
 npm run dev
@@ -47,6 +50,7 @@ npm run preview
 
 - 遷移: `/?kit=webapp&industry=construction&cat=dashboard&from=hookapp-takumi`
 - 別タブで開きます
+- 出口: 「見積もりを閉じる」→ 閲覧モード（業界選択可）。正本 [`../roi-simulator/docs/demo-roi-integration-playbook.md`](../roi-simulator/docs/demo-roi-integration-playbook.md) §1.2
 
 ## 将来の AI 連携
 

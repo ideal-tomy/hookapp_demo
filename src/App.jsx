@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { RoiPaybackCta } from "./components/RoiPaybackCta";
+import { DemoIntro } from "./components/demo-intro/DemoIntro";
+import { generateDemoResponse } from "../api/_lib/demoChat";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
 } from "recharts";
@@ -51,7 +53,14 @@ const TABS = [
 ];
 
 export default function App() {
-  const [tab, setTab] = useState("score");
+  const readTab = () => ["score", "match", "assist"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "intro";
+  const [tab, setTab] = useState(readTab);
+  useEffect(() => {
+    const update = () => setTab(readTab());
+    window.addEventListener("hashchange", update);
+    return () => window.removeEventListener("hashchange", update);
+  }, []);
+  const enter = (next) => { location.hash = next === "intro" ? "" : next; setTab(next); window.scrollTo(0, 0); };
   return (
     <div className="tk-root">
       <style>{CSS}</style>
@@ -64,16 +73,17 @@ export default function App() {
           </div>
         </div>
         <div className="tk-meta">
+          {tab !== "intro" && <button className="ti-back" type="button" onClick={() => enter("intro")}>紹介を見る</button>}
           <span className="tk-pill">登録業者 <b>{VENDORS.length}</b> 社</span>
           <span className="tk-pill tk-pill--demo">DEMO</span>
         </div>
       </header>
 
-      <nav className="tk-tabs">
+      {tab !== "intro" && <nav className="tk-tabs">
         {TABS.map((t) => {
           const I = t.icon;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)}
+            <button key={t.id} onClick={() => enter(t.id)}
               className={"tk-tab" + (tab === t.id ? " is-on" : "")}>
               <I size={17} strokeWidth={2.2} />
               <span className="tk-tab-l">{t.label}</span>
@@ -81,9 +91,10 @@ export default function App() {
             </button>
           );
         })}
-      </nav>
+      </nav>}
 
       <main className="tk-main">
+        {tab === "intro" && <DemoIntro renderScreen={renderIntroScreen} onEnter={enter} />}
         {tab === "score" && <ScoringView />}
         {tab === "match" && <MatchingView />}
         {tab === "assist" && <AssistantView />}
@@ -100,8 +111,8 @@ export default function App() {
 }
 
 /* ===================== 1. SCORING ===================== */
-function ScoringView() {
-  const [sel, setSel] = useState(VENDORS[0]);
+function ScoringView({ preview = false } = {}) {
+  const [sel, setSel] = useState(preview ? VENDORS[1] : VENDORS[0]);
   const radarData = DIMS.map((d) => ({ dim: d.label, v: sel.s[d.key] }));
   return (
     <div className="tk-grid2">
@@ -147,7 +158,7 @@ function ScoringView() {
             <RadarChart data={radarData} outerRadius="72%">
               <PolarGrid stroke="#cfc8b8" />
               <PolarAngleAxis dataKey="dim" tick={{ fill: "#5a5446", fontSize: 12 }} />
-              <Radar dataKey="v" stroke="var(--steel)" fill="var(--steel)" fillOpacity={0.22} strokeWidth={2} />
+              <Radar dataKey="v" stroke="var(--steel)" fill="var(--steel)" fillOpacity={0.22} strokeWidth={2} isAnimationActive={!preview} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -258,16 +269,30 @@ const SUGGESTIONS = [
   "駐車場の外構工事を急ぎでお願いしたい業者を探しています。",
   "RCマンションの給排水管を全面更新したい。実績重視で選びたい。",
 ];
-function AssistantView() {
+const INTRO_QUESTION = "店舗の外壁が剥がれてきたので塗装し直したい。予算は150万くらい。";
+const INTRO_MESSAGES = [
+  { role: "user", text: INTRO_QUESTION },
+  { role: "assistant", text: generateDemoResponse([{ role: "user", text: INTRO_QUESTION }]) },
+];
+
+function renderIntroScreen(id) {
+  if (id === "ranking" || id === "detail") return <ScoringView preview />;
+  if (id === "project" || id === "team") return <MatchingView />;
+  return <AssistantView preview={id} />;
+}
+
+function AssistantView({ preview = null } = {}) {
   const [msgs, setMsgs] = useState([
     { role: "assistant", text: "ご要望をお聞かせください。条件に合う登録業者を、理由つきでご提案します。（工種・エリア・予算・重視点などをお書きください）" },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const endRef = useRef(null);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy]);
+  useEffect(() => { if (!preview) endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy, preview]);
+  const shownMessages = preview ? (preview === "ask" ? INTRO_MESSAGES.slice(0, 1) : INTRO_MESSAGES) : msgs;
 
   const send = async (text) => {
+    if (preview) return;
     const q = (text ?? input).trim();
     if (!q || busy) return;
     const next = [...msgs, { role: "user", text: q }];
@@ -298,15 +323,15 @@ function AssistantView() {
         <p className="tk-note">登録業者のスコアを根拠に、顧客の言葉から最適な業者を提案します（デモ用の自動応答です／AI連携は準備中）</p>
       </div>
       <div className="tk-chat-body">
-        {msgs.map((m, i) => (
+        {shownMessages.map((m, i) => (
           <div key={i} className={"tk-msg tk-msg--" + m.role}>
-            <div className="tk-bubble">{m.text}</div>
+            <div className="tk-bubble">{preview === "reply" && m.role === "assistant" ? m.text.split("\n\n").slice(1).join("\n\n") : m.text}</div>
           </div>
         ))}
         {busy && <div className="tk-msg tk-msg--assistant"><div className="tk-bubble tk-typing"><span /><span /><span /></div></div>}
         <div ref={endRef} />
       </div>
-      {msgs.length <= 1 && (
+      {!preview && msgs.length <= 1 && (
         <div className="tk-sugg">
           {SUGGESTIONS.map((s) => (
             <button key={s} className="tk-sugg-btn" onClick={() => send(s)}><Search size={12} /> {s}</button>
@@ -314,10 +339,10 @@ function AssistantView() {
         </div>
       )}
       <div className="tk-chat-input">
-        <input value={input} onChange={(e) => setInput(e.target.value)}
+        <input value={input} disabled={Boolean(preview)} aria-label="業者選定の相談内容" onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="ご要望を入力（例：外壁塗装を予算150万で…）" />
-        <button onClick={() => send()} disabled={busy || !input.trim()}><Send size={16} /></button>
+        <button aria-label="相談を送信" onClick={() => send()} disabled={Boolean(preview) || busy || !input.trim()}><Send size={16} /></button>
       </div>
     </div>
   );
